@@ -1,0 +1,169 @@
+{   "clear_output_folder": "True",
+    "input_path": "input/",
+    
+    "multiprocessing": "True",
+
+    "remove_exif": "True",
+
+    "options": {
+        "Blur": "integer, 0-4, fully visible to blurred",
+        "Rotate": "integer, 0-15, degrees, negative for left",
+        "Mirror": "integer, 0-1, yes or no",
+        "Sharpen": "integer, 0-5, choices",
+        "Offset": "integer, 0-20, shifts the image to left or right. Negative for left",
+        "Speed": "float, 0-2, 0 and 1 has no effect, values between 0-1 slow the video down",
+        "Zoom": "integer, 0-40, percentage",
+        "Brightness": "float, -1-1 positive values increase brightness, negative values decrease it",
+        "Contrast": "integer, -3-3, values greater than 1 increase contrast, values less than 1 decrease contrast",
+        "Saturation": "float, 0-3, values greater than 1 increase saturation, values less than 1 decrease saturation",
+        "Gamma": "float, 0-3, values greater than 1 increase gamma, values less than 1 decrease gamma"
+    },
+
+
+    "presets": [
+        [0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0], 
+        [0, 1, 0, 0, 0, 0, 5, 0, 0, 0, 0], 
+	[0, 1, 1, 0, 0, 0, 5, 0, 0, 0, 0], 
+	[0, -1, 0, 0, 0, 0, 5, 0, 0, 0, 0], 
+	[0, -1, 1, 0, 0, 0, 5, 0, 0, 0, 0], 
+	[0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0], 
+	[0, 2, 1, 0, 0, 0, 7, 0, 0, 0, 0], 
+	[0, -2, 0, 0, 0, 0, 7, 0, 0, 0, 0], 
+	[0, -2, 1, 0, 0, 0, 7, 0, 0, 0, 0], 
+	[0, 3, 0, 0, 0, 0, 9, 0, 0, 0, 0], 
+        [0, 3, 1, 0, 0, 0, 9, 0, 0, 0, 0], 
+        [0, -3, 0, 0, 0, 0, 9, 0, 0, 0, 0], 
+        [0, -3, 1, 0, 0, 0, 9, 0, 0, 0, 0], 
+	[0, 5, 0, 0, 0, 0, 15, 0, 0, 0, 0], 
+	[0, 5, 1, 0, 0, 0, 15, 0, 0, 0, 0], 
+	[0, -5, 0, 0, 0, 0, 15, 0, 0, 0, 0], 
+	[0, -5, 1, 0, 0, 0, 15, 0, 0, 0, 0], 
+	[0, 7, 0, 0, 0, 0, 21, 0, 0, 0, 0], 
+	[0, 7, 1, 0, 0, 0, 21, 0, 0, 0, 0],
+	[0, -7, 0, 0, 0, 0, 21, 0, 0, 0, 0], 
+	[0, -7, 1, 0, 0, 0, 21, 0, 0, 0, 0]
+    ],
+
+    "topaz_ffmpeg_command": [
+        "ffmpeg", "-hide_banner", "-i", "input", "-sws_flags", "spline+accurate_rnd+full_chroma_int",
+        "-color_trc", "1", "-colorspace", "6", "-color_primaries", "5",
+        "-filter_complex",
+        "tvai_up=model=thm-2:scale=1:device=2:vram=1:instances=0,tvai_up=model=prob-3:scale=0:w=2160:h=3840:preblur=0.04:noise=1:details=1:halo=0.82:blur=0.71:compression=1:blend=1:device=2:vram=1:instances=0,scale=w=2160:h=3840:flags=lanczos:threads=0,colorspace=ispace=5:space=6:primaries=5:trc=1",
+        "-c:v", "h264_nvenc", "-profile:v", "high", "-pix_fmt", "yuv420p", "-g", "30", "-preset", "p7", "-tune", "hq",
+        "-rc", "constqp", "-qp", "18", "-rc-lookahead", "20", "-spatial_aq", "1", "-aq-strength", "15", "-b:v", "0",
+        "-map", "0:a", "-map_metadata:s:a:0", "0:s:i:2", "-c:a", "aac", "-ac", "2", "-b:a", "320k", "-map_metadata", "0",
+        "-map_metadata:s:v", "0:s:v", "-movflags", "frag_keyframe+empty_moov+delay_moov+use_metadata_tags+write_colr",
+        "-metadata",
+        "videoai=Motion blur removed using thm-2. Enhanced using prob-3; mode: manual; revert compression at 100; recover details at 100; sharpen at 71; reduce noise at 100; dehalo at 82; anti-alias/deblur at 4; and recover original detail at 100. Changed resolution to 2160x3840",
+        "output"
+    ],
+
+    "exiftool_commands": [
+        [
+          "exiftool",
+          "-Make=Apple",
+          "-Model=iPhone 13 Pro Max",
+          "-Software=16.5",
+          "-xmptoolkit=",
+          "-overwrite_original",
+          "output_path"
+        ],
+        [ 
+          "exiftool", 
+          "-Make=Apple", 
+          "-Model=iPhone 12 Pro", 
+          "-Software=15.0", 
+          "-xmptoolkit=", 
+          "-overwrite_original", 
+          "output_path" 
+        ] 
+ ,[ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 11", 
+    "-Software=14.2", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+,[ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone X", 
+    "-Software=13.5", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ ,[ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 8 Plus", 
+    "-Software=12.3", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+, [ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone SE", 
+    "-Software=11.1", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+, [ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 6s", 
+    "-Software=10.0", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+, [ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 5s", 
+    "-Software=9.2", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+, [ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 4S", 
+    "-Software=8.1", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+, [ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 3G", 
+    "-Software=7.0", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+ 
+, [ 
+    "exiftool", 
+    "-Make=Apple", 
+    "-Model=iPhone 2G", 
+    "-Software=6.0", 
+    "-xmptoolkit=", 
+    "-overwrite_original", 
+    "output_path" 
+] 
+      ]
+}
