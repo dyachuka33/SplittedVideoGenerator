@@ -1,3 +1,4 @@
+import random
 import subprocess
 import os
 import shutil
@@ -5,6 +6,30 @@ import json
 import random
 import time
 from PIL import Image
+
+
+top_preset = []
+bottom_preset = []
+
+def select_random_file(directory):
+    # Check if the directory exists
+    if not os.path.exists(directory):
+        print("Directory doesn't exist.")
+        return None
+
+    # Get a list of all files in the directory
+    files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+
+    # Check if there are any files in the directory
+    if not files:
+        print("No files found in the directory.")
+        return None
+
+    # Select a random file from the list
+    random_file = random.choice(files)
+
+    # Return the full path to the randomly selected file
+    return os.path.join(directory, random_file)
 
 def get_media_info(file_path, is_image):
     ffprobe_cmd = [
@@ -54,92 +79,66 @@ options = {
     }   
 
 
-def generate_ffmpeg_command(input_path, presets, output_path):
+def generate_adjust_ffmpeg_command(input_path, preset, output_path):
     global width, height, duration_t
+    width, height, duration_t, rotation = get_media_info(input_path, False)
+    command = f'ffmpeg -hide_banner -noautorotate -i "{input_path}" -filter_complex "'
+    filters = ""    
+    for i, value in enumerate(preset):
+        if value == 0:
+            if all(item == 0 for item in preset):
+                filters = "null"
+                break
+            continue
+            
+        option_dict = options.get(list(options.keys())[i])
+        filter = option_dict.get("filter")
 
-    is_image = is_image_file(input_path)
-
-    width, height, duration_t, rotation = get_media_info(input_path, is_image)
-
-    #We need to add extra frames for filters, some filters on hardware needs frames to be fixed.
-    if is_image:
-        command = f'ffmpeg -hide_banner -loglevel error -noautorotate -i "{input_path}" -filter_complex "[0:v]split={len(presets)}{"".join([f"[in{i+1}]" for i in range(len(presets))])};'
-    else:
-        command = f'ffmpeg -hide_banner -noautorotate -i "{input_path}" -filter_complex "[0:v]split={len(presets)}{"".join([f"[in{i+1}]" for i in range(len(presets))])};'
-        
-    for idx, preset in enumerate(presets, start=1):
-        filters = ""
-
-        for i, value in enumerate(preset):
-            if value == 0:
-                if all(item == 0 for item in preset):
-                    filters = "null"
-                    break
-                continue
-                
-            option_dict = options.get(list(options.keys())[i])
-            filter = option_dict.get("filter")
-
-            if list(options.keys())[i] == "mirror": 
-                if rotation == "90" or rotation == "270":
-                    filters += "vflip,"
-                else:
-                    filters += "hflip,"
-                continue
-            if "format" in option_dict:
-                filters += f"{filter}={option_dict.get('format')(value)},"
-            elif "direct" in option_dict:
-                filters += f"{filter},"
+        if list(options.keys())[i] == "mirror": 
+            if rotation == "90" or rotation == "270":
+                filters += "vflip,"
             else:
-                filters += f"{filter}={value},"
+                filters += "hflip,"
+            continue
+        if "format" in option_dict:
+            filters += f"{filter}={option_dict.get('format')(value)},"
+        elif "direct" in option_dict:
+            filters += f"{filter},"
+        else:
+            filters += f"{filter}={value},"
 
-        if filters != "":
-            filters = filters[:-1:] if filters[-1] == "," else filters
+    if filters != "":
+        filters = filters[:-1:] if filters[-1] == "," else filters
 
-        command += f"[in{idx}]{filters}[out{idx}];"
-        # command += 
-    #todo: bitrate control - bvr, crf, cbr - crf is best but hevc_nvenc doesn't support?
-    #using 2 pass encoding
-    #scaling filter should use the lancz interpolation to improve quality though speed becomes slow
-    #brightness testing.
+    command += filters
+
     command = command[:-1:] if command[-1] == ";" else command
 
-    filename = os.path.basename(input_path).split('.')[0]
-    if is_image:
-        mappings = "".join([f' -map [out{i+1}] -pix_fmt yuvj420p -s {width}x{height} "{output_path}{filename}_{i}.jpg"' for i in range(len(presets))])
-    else :
-        mappings = "".join([f' -map [out{i+1}] -map 0:a -c:v h264_nvenc -s {width}x{height} -b:v 3500k "{output_path}{filename}_{i}.mp4"' for i in range(len(presets))])
+    mappings = f" -c:v h264_nvenc -s {width}x{height} -b:v 3500k " + output_path
 
     command = f'{command}"{mappings}'
 
     return command
 
-def run_ffmpeg_command(command):
+def run_adjust_ffmpeg_command(command):
     os.system(command)
-
-
-def is_image_file(file_path):
-    try:
-        img = Image.open(file_path)
-        img.verify()  # Attempt to open and verify the image file
-        return True
-    except (IOError, SyntaxError):
-        return False
 
 def get_presets(json_file):
     mode = 2
     if input("1- Auto create presets\n2- Get presets from json\n>>>") == "1":
         mode = 1
-        num_of_presets = int(input("Number of presets:\n>>>"))
+        top_preset = []
+        for key, value in json_file["options"].items():
+            orange = [int(x) for x in value.split(", ")[1].split("-")]
+            top_preset.append(random.randint(orange[0], orange[1]))
 
-        presets = []
-        for _ in range(num_of_presets):
-            preset = []
-            for key, value in json_file["options"].items():
-                orange = [int(x) for x in value.split(", ")[1].split("-")]
-                preset.append(random.randint(orange[0], orange[1]))
-            presets.append(preset)
-        json_file["presets"] = presets
+        json_file["top_preset"] = top_preset
+        bottom_preset = []
+        for key, value in json_file["options"].items():
+            orange = [int(x) for x in value.split(", ")[1].split("-")]
+            bottom_preset.append(random.randint(orange[0], orange[1]))
+
+        json_file["bottom_preset"] = bottom_preset
     return json_file, mode
 
 
@@ -148,63 +147,52 @@ def clean_output_folder():
     shutil.rmtree("output")
     os.mkdir("output/")
 
+def adjust_video(video_path, preset, output_path):
+    command = generate_adjust_ffmpeg_command(video_path, preset, output_path=output_path)
+    run_adjust_ffmpeg_command(command)
+    pass
+
+
+def generate_final_video(top_video, bottom_video, presets):
+    temp_top_video = "output/top_video.mp4"
+    temp_bottom_video = "output/bottom_video.mp4"
+    adjust_video(top_video, presets['top_preset'], temp_top_video)
+    adjust_video(bottom_video, presets['bottom_preset'], temp_bottom_video)
+    _, _, top_duration, _ = get_media_info(temp_top_video, False)
+    # _, _, bottom_duration, _ = get_media_info(temp_bottom_video, False)
+    duration = top_duration
+    # if float(top_duration) > 
+    split_command = f'ffmpeg -y -i {temp_top_video} -i {temp_bottom_video} -filter_complex "[0:v]scale=1920:540[top];[1:v]scale=1920:540[bottom];[top][bottom]vstack" -c:v libx264 -preset ultrafast -t {duration} -r 30 -c:a aac output/output.mp4'
+    time.sleep(0.5)
+    os.system(split_command)
+    os.remove(temp_bottom_video)
+    os.remove(temp_top_video)
+    pass
+
 def main():
     global config
     
     os.system('cls' if os.name == 'nt' else 'clear')
 
     config = json.load(open('settings.json', 'r'))
-    presets, chosen_mode = get_presets(config)
-    if chosen_mode == 2:
-        if input("\n1-Use all presets\n2-Use selected number of presets\n>>>") == "2":
-            n = int(input("Input number: "))
-            preset_list = presets.get("presets")
-            presets["presets"] = (preset_list * ((n + len(preset_list) - 1) // len(preset_list)))[:n]
-
+    presets, _ = get_presets(config)
     if presets["clear_output_folder"] == "True":
         clean_output_folder()
 
-    input_path = presets["input_path"] if presets["input_path"][-1] in ["/", "\\"] else presets["input_path"] + "\\"
-    files = os.listdir(input_path)
     #files = [x.replace(" ", "").replace("(", "-").replace(")", "-") for x in files_dir]
     
     os.system('cls' if os.name == 'nt' else 'clear')
-    topaz = "n"
-    resolution = False
-    resolution_str = ('*'.join(resolution) if type(resolution) == list else 'Default') + "\n"
-    header = f"________________________________________\nInput info:\n    Total videos: {len(files)}\n    Size: {round(sum([os.path.getsize('input/' + f) for f in os.listdir('input/')]) / 1000000, 2)} MB\n    Presets: {len(presets.get('presets'))}\nSettings:\n    Multiprocessing: {'Enabled' if config.get('multiprocessing') == 'True' else 'Disabled'}\n{'        Resolution: ' + resolution_str if config.get('multiprocessing') == 'True' else ''}    AI Enchancing: {'Enabled' if topaz == 'y' else 'Disabled'}\n    Output folder auto clean: {'Enabled' if presets.get('clear_output_folder') == 'True' else 'Disabled'}\n________________________________________"
-    print(header)
-    exiftool_commands = presets.get("exiftool_commands")
-    exiftool_commands_num = len(exiftool_commands)
-    for file in files:
-        print(f"Processing: {file}")
 
-        path = presets["input_path"] + file
 
-        output_path = f"output/{file.split('.')[0].replace(' ', '_')}/"
-        os.mkdir(output_path)
+    
+    top_video = presets["top_video"]
+    bottom_video = select_random_file(presets["gameplay_clips"])
 
-        command = generate_ffmpeg_command(path, presets=presets.get("presets"), output_path=output_path)
 
-        run_ffmpeg_command(command)
+    generate_final_video(top_video, bottom_video, presets)
 
-        
-        if presets["remove_exif"] != "True":
-            continue
-        output_files = os.listdir(output_path)
-        for idx, output_file in enumerate(output_files):
-            outfile = output_path + output_file
-            try:
-                print(f"Removing exif from {outfile}")
-                os.system(f"exiftool -all= -overwrite_original {outfile}")
-                command = exiftool_commands[idx%exiftool_commands_num]
-                command[-1] = outfile
-                subprocess.run(command)
-            except:
-                print("Failed to remove metadata")
-                raise RuntimeWarning
+    
 
-    print(header)
     print("All Files Done!")
 
 

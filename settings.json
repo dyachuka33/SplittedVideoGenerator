@@ -1,9 +1,7 @@
 {   "clear_output_folder": "True",
-    "input_path": "input/",
-    
+    "top_video": "input/input.mp4",
+    "gameplay_clips": "input/gameplayvideos",
     "multiprocessing": "True",
-
-    "remove_exif": "True",
 
     "options": {
         "Blur": "integer, 0-4, fully visible to blurred",
@@ -18,31 +16,8 @@
         "Saturation": "float, 0-3, values greater than 1 increase saturation, values less than 1 decrease saturation",
         "Gamma": "float, 0-3, values greater than 1 increase gamma, values less than 1 decrease gamma"
     },
-
-
-    "presets": [
-        [0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0], 
-        [0, 1, 0, 0, 0, 0, 5, 0, 0, 0, 0], 
-	[0, 1, 1, 0, 0, 0, 5, 0, 0, 0, 0], 
-	[0, -1, 0, 0, 0, 0, 5, 0, 0, 0, 0], 
-	[0, -1, 1, 0, 0, 0, 5, 0, 0, 0, 0], 
-	[0, 2, 0, 0, 0, 0, 7, 0, 0, 0, 0], 
-	[0, 2, 1, 0, 0, 0, 7, 0, 0, 0, 0], 
-	[0, -2, 0, 0, 0, 0, 7, 0, 0, 0, 0], 
-	[0, -2, 1, 0, 0, 0, 7, 0, 0, 0, 0], 
-	[0, 3, 0, 0, 0, 0, 9, 0, 0, 0, 0], 
-        [0, 3, 1, 0, 0, 0, 9, 0, 0, 0, 0], 
-        [0, -3, 0, 0, 0, 0, 9, 0, 0, 0, 0], 
-        [0, -3, 1, 0, 0, 0, 9, 0, 0, 0, 0], 
-	[0, 5, 0, 0, 0, 0, 15, 0, 0, 0, 0], 
-	[0, 5, 1, 0, 0, 0, 15, 0, 0, 0, 0], 
-	[0, -5, 0, 0, 0, 0, 15, 0, 0, 0, 0], 
-	[0, -5, 1, 0, 0, 0, 15, 0, 0, 0, 0], 
-	[0, 7, 0, 0, 0, 0, 21, 0, 0, 0, 0], 
-	[0, 7, 1, 0, 0, 0, 21, 0, 0, 0, 0],
-	[0, -7, 0, 0, 0, 0, 21, 0, 0, 0, 0], 
-	[0, -7, 1, 0, 0, 0, 21, 0, 0, 0, 0]
-    ],
+    "top_preset":[0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0],
+    "bottom_preset": [0, 1, 1, 0, 0, 0, 5, 0, 0, 0, 0],
 
     "topaz_ffmpeg_command": [
         "ffmpeg", "-hide_banner", "-i", "input", "-sws_flags", "spline+accurate_rnd+full_chroma_int",
